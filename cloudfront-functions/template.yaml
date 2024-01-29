@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  JavaScript2.0
+
+  CloudFormation Template for CloudFront Functions in originless-cloudfront
+
+Parameters:
+  ResourcePrefix:
+    Type: String
+    Default: originless-cloudfront-cf2
+  Environment:
+    Type: String
+    Default: dev
+  KeyValueArn:
+    Type: String
+    Default: arn:aws:s3:::YOUR_S3_BUCKET_NAME/key_value.json
+
+Resources:
+  KeyValueStore:
+    Type: AWS::CloudFront::KeyValueStore
+    Properties:
+      Comment: !Sub ${ResourcePrefix}-keyvalue-${Environment}
+      ImportSource:
+        SourceArn: !Ref KeyValueArn
+        SourceType: S3
+      Name: !Sub ${ResourcePrefix}-function-${Environment}
+  Function:
+    Type: AWS::CloudFront::Function
+    Properties:
+      AutoPublish: true
+      FunctionCode: !Sub |
+        import cf from 'cloudfront';
+
+        const kvsId = "${KeyValueStore.Id}";
+        const kvsHandle = cf.kvs(kvsId);
+        const originHitRate = 0.5;
+
+        async function handler(event) {
+          const request = event.request;
+          const key = event.request.uri.split('/')[1]
+
+          try {
+            let value = await kvsHandle.get(key);
+
+            if (Math.random() <= originHitRate) {
+              console.log("Go to the origin.");
+              return request;
+            }
+            else {
+              console.log("Not go to the origin.");
+              var response = {
+                      statusCode: 302,
+                      statusDescription: 'Found',
+                      headers:
+                          { "location": { "value": value } }
+                      }
+                  return response;
+            }
+          } catch (err) {
+                console.log(`Kvs key lookup failed`);
+            }
+        }
+      FunctionConfig:
+        Comment: !Sub CloudFront Function for ${ResourcePrefix} in ${Environment}
+        KeyValueStoreAssociations:
+          - KeyValueStoreARN: !GetAtt KeyValueStore.Arn
+        Runtime: cloudfront-js-2.0
+      Name: !Sub ${ResourcePrefix}-function-${Environment}
+    DependsOn: KeyValueStore
+
+Outputs:
+  KeyValueArn:
+    Description: ARN of KeyValueStore
+    Value: !GetAtt KeyValueStore.Arn
+    Export:
+      Name: KeyValueStoreArn
