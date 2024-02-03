@@ -12,7 +12,7 @@ Parameters:
   Environment:
     Type: String
     Default: dev
-  KeyValueArn:
+  KeyValueStoreSourceArn:
     Type: String
     Default: arn:aws:s3:::YOUR_S3_BUCKET_NAME/key_value.json
 
@@ -20,11 +20,11 @@ Resources:
   KeyValueStore:
     Type: AWS::CloudFront::KeyValueStore
     Properties:
-      Comment: !Sub ${ResourcePrefix}-keyvalue-${Environment}
+      Comment: !Sub KeyValueStore for ${ResourcePrefix}-${Environment}
       ImportSource:
-        SourceArn: !Ref KeyValueArn
+        SourceArn: !Ref KeyValueStoreSourceArn
         SourceType: S3
-      Name: !Sub ${ResourcePrefix}-function-${Environment}
+      Name: !Sub ${ResourcePrefix}-${Environment}
   Function:
     Type: AWS::CloudFront::Function
     Properties:
@@ -62,16 +62,9 @@ Resources:
             }
         }
       FunctionConfig:
-        Comment: !Sub CloudFront Function for ${ResourcePrefix} in ${Environment}
+        Comment: !Sub CloudFront Function for ${ResourcePrefix}-${Environment}
         KeyValueStoreAssociations:
           - KeyValueStoreARN: !GetAtt KeyValueStore.Arn
         Runtime: cloudfront-js-2.0
-      Name: !Sub ${ResourcePrefix}-function-${Environment}
+      Name: !Sub ${ResourcePrefix}-${Environment}
     DependsOn: KeyValueStore
-
-Outputs:
-  KeyValueArn:
-    Description: ARN of KeyValueStore
-    Value: !GetAtt KeyValueStore.Arn
-    Export:
-      Name: KeyValueStoreArn
