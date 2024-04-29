@@ -2,11 +2,17 @@
 
 https://qiita.com/watany/items/b86c2304832126de76e0
 
-以上の記事を参考に、文中で言われる Originless な CloudFront を構築するためのあれこれを実装してみる。
+以上の記事を参考に、文中で言われる `Originless` な CloudFront を構築するためのあれこれを実装する。
+
+## Requirements
+
+開発に利用するツールは `asdf` で管理している。
 
 ## Lambda@Edge
 
 Web フレームワーク `Hono` を利用して特定パスへのアクセス時に Lambda@Edge によってレスポンスを返す。
+
+AWS SAM Template を利用して Lambda 関数と IAM Role を管理 / ビルド / デプロイ を行う。
 
 ## CloudFront Functions (CF2)
 
